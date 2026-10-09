@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Municipal Officer Login | City Budget Allocation Simulator</title>
+  <meta name="description" content="Secure municipal access portal for city council members, urban planners, and financial directors using the City Budget Allocation Simulator.">
+  <link rel="icon" type="image/svg+xml" href="assets/city-emblem.svg">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="auth-body">
+
+  <div class="auth-wrapper">
+    <!-- Left Hero Brand Panel (Desktop) -->
+    <div class="auth-hero-panel">
+      <div class="auth-hero-header">
+        <div class="auth-brand-badge">
+          <span>🏛️</span>
+          <span>Municipal Decision Support Suite</span>
+        </div>
+        <h1 class="auth-hero-title">City Budget Allocation Simulator</h1>
+        <p class="auth-hero-subtitle">
+          Empowering city councils with constrained 0/1 Knapsack Dynamic Programming for transparent, data-informed capital allocation.
+        </p>
+
+        <div class="auth-features-list">
+          <div class="auth-feature-item">
+            <div class="auth-feature-icon">⚡</div>
+            <div class="auth-feature-text">
+              <h4>0/1 Knapsack DP Engine</h4>
+              <p>Computes global optimal project subsets under municipal budget ceilings in &lt; 2ms.</p>
+            </div>
+          </div>
+
+          <div class="auth-feature-item">
+            <div class="auth-feature-icon">⚖️</div>
+            <div class="auth-feature-text">
+              <h4>Multi-Constrained Governance</h4>
+              <p>Strictly enforces statutory category floors, expenditure caps, and mandatory civic mandates.</p>
+            </div>
+          </div>
+
+          <div class="auth-feature-item">
+            <div class="auth-feature-icon">📊</div>
+            <div class="auth-feature-text">
+              <h4>Sensitivity &amp; Scenario Analytics</h4>
+              <p>Instant multi-scenario sensitivity curve and automated trade-off marginal return analysis.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="auth-hero-footer">
+        <span>Restricted Government Access</span>
+        <span>Smart City Protocol &bull; FY 2026-27</span>
+      </div>
+    </div>
+
+    <!-- Right Authentication Form Panel -->
+    <div class="auth-form-panel">
+      <!-- Tabs: Sign In / Create Account -->
+      <div class="auth-tabs">
+        <button type="button" class="auth-tab-btn active" id="tabSignIn">Sign In</button>
+        <button type="button" class="auth-tab-btn" id="tabSignUp">Create Account</button>
+      </div>
+
+      <!-- Top Alert Message Container -->
+      <div id="authAlert" style="display: none; padding: 0.75rem 1rem; border-radius: var(--radius-md); margin-bottom: 1.25rem; font-size: 0.82rem; font-weight: 600; align-items: center; gap: 0.5rem;">
+        <span id="authAlertIcon">⚠️</span>
+        <span id="authAlertMsg"></span>
+      </div>
+
+      <!-- ================= FORM 1: SIGN IN ================= -->
+      <form id="loginForm" novalidate>
+        <div class="auth-form-header">
+          <h2>Welcome Back</h2>
+          <p>Sign in with your official municipal email or council credentials.</p>
+        </div>
+
+        <!-- Email Field -->
+        <div class="form-group">
+          <label class="form-label" for="loginEmail">
+            Official Municipal Email <span class="required">*</span>
+          </label>
+          <div class="input-with-icon">
+            <span class="input-icon-lead">✉️</span>
+            <input 
+              type="email" 
+              id="loginEmail" 
+              class="form-control" 
+              placeholder="officer@smartcity.gov" 
+              autocomplete="email" 
+              required
+            >
+          </div>
+          <div class="form-error-msg" id="loginEmailError">
+            <span>⚠️</span> Please enter a valid municipal email address.
+          </div>
+        </div>
+
+        <!-- Password Field -->
+        <div class="form-group">
+          <label class="form-label" for="loginPassword">
+            Password <span class="required">*</span>
+          </label>
+          <div class="input-with-icon">
+            <span class="input-icon-lead">🔒</span>
+            <input 
+              type="password" 
+              id="loginPassword" 
+              class="form-control" 
+              placeholder="••••••••••••" 
+              autocomplete="current-password" 
+              required
+            >
+            <button type="button" class="btn-toggle-password" id="btnToggleLoginPassword" aria-label="Toggle password visibility">
+              👁️
+            </button>
+          </div>
+          <div class="form-error-msg" id="loginPasswordError">
+            <span>⚠️</span> Password cannot be empty.
+          </div>
+        </div>
+
+        <!-- Options Row: Remember Me & Forgot Password -->
+        <div class="auth-options-row">
+          <label class="auth-checkbox-label" for="loginRemember">
+            <input type="checkbox" id="loginRemember" checked style="width: 16px; height: 16px; cursor: pointer;">
+            <span>Remember Me</span>
+          </label>
+          <a href="#" class="auth-link" id="linkForgotPassword">Forgot Password?</a>
+        </div>
+
+        <!-- Submit Button -->
+        <button type="submit" class="btn btn-primary" id="btnSignInSubmit" style="width: 100%; height: 46px; font-size: 0.95rem;">
+          <span id="btnSignInText">Sign In to Civic Portal</span>
+          <span id="btnSignInSpinner" style="display: none;">⏳ Authenticating...</span>
+        </button>
+
+        <!-- 1-Click Demo Credentials Box -->
+        <div class="demo-accounts-card">
+          <div class="demo-accounts-title">
+            <span>⚡</span>
+            <span>Quick 1-Click Demo Accounts:</span>
+          </div>
+          <div class="demo-chips-grid">
+            <button type="button" class="demo-chip-btn" data-email="admin@smartcity.gov" data-pass="CityAdmin2026!">
+              <div>
+                <div class="demo-chip-name">Dr. Rohith Reddy</div>
+                <div class="demo-chip-role">City Administrator &bull; admin@smartcity.gov</div>
+              </div>
+              <span class="badge badge-primary">Use</span>
+            </button>
+
+            <button type="button" class="demo-chip-btn" data-email="planner@smartcity.gov" data-pass="Planner2026!">
+              <div>
+                <div class="demo-chip-name">Elena Vance</div>
+                <div class="demo-chip-role">Urban Works Planner &bull; planner@smartcity.gov</div>
+              </div>
+              <span class="badge badge-success">Use</span>
+            </button>
+
+            <button type="button" class="demo-chip-btn" data-email="analyst@smartcity.gov" data-pass="Analyst2026!">
+              <div>
+                <div class="demo-chip-name">Marcus Sterling</div>
+                <div class="demo-chip-role">Budget Analyst &bull; analyst@smartcity.gov</div>
+              </div>
+              <span class="badge badge-info">Use</span>
+            </button>
+          </div>
+        </div>
+      </form>
+
+      <!-- ================= FORM 2: SIGN UP ================= -->
+      <form id="registerForm" style="display: none;" novalidate>
+        <div class="auth-form-header">
+          <h2>Create Council Account</h2>
+          <p>Register an authorized municipal officer profile.</p>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="regName">
+            Full Name &amp; Title <span class="required">*</span>
+          </label>
+          <div class="input-with-icon">
+            <span class="input-icon-lead">👤</span>
+            <input type="text" id="regName" class="form-control" placeholder="e.g., Officer Ananya Sharma" required>
+          </div>
+          <div class="form-error-msg" id="regNameError">
+            <span>⚠️</span> Full name is required.
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="regEmail">
+            Official Email Address <span class="required">*</span>
+          </label>
+          <div class="input-with-icon">
+            <span class="input-icon-lead">✉️</span>
+            <input type="email" id="regEmail" class="form-control" placeholder="name@smartcity.gov" required>
+          </div>
+          <div class="form-error-msg" id="regEmailError">
+            <span>⚠️</span> Please enter a valid municipal email format.
+          </div>
+        </div>
+
+        <div class="form-row" style="margin-bottom: 1.25rem;">
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label" for="regDepartment">Department</label>
+            <select id="regDepartment" class="form-control">
+              <option value="Urban Infrastructure & Roads">Urban Infrastructure &amp; Roads</option>
+              <option value="Healthcare & Sanitation Directorate">Healthcare &amp; Sanitation</option>
+              <option value="Finance & Municipal Accounts">Finance &amp; Accounts</option>
+              <option value="Water Supply & Resources">Water Supply &amp; Resources</option>
+              <option value="Environment & Smart Planning">Environment &amp; Planning</option>
+            </select>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label" for="regRole">Civic Role</label>
+            <select id="regRole" class="form-control">
+              <option value="Urban Planner">Urban Planner</option>
+              <option value="Budget Analyst">Budget Analyst</option>
+              <option value="City Council Member">Council Member</option>
+              <option value="Director of Engineering">Director of Engineering</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="regPassword">
+            Password <span class="required">*</span>
+          </label>
+          <div class="input-with-icon">
+            <span class="input-icon-lead">🔒</span>
+            <input type="password" id="regPassword" class="form-control" placeholder="At least 6 characters" required>
+            <button type="button" class="btn-toggle-password" id="btnToggleRegPassword" aria-label="Toggle password">👁️</button>
+          </div>
+          <div class="form-error-msg" id="regPasswordError">
+            <span>⚠️</span> Password must be at least 6 characters.
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="regConfirmPassword">
+            Confirm Password <span class="required">*</span>
+          </label>
+          <div class="input-with-icon">
+            <span class="input-icon-lead">🔒</span>
+            <input type="password" id="regConfirmPassword" class="form-control" placeholder="Re-enter password" required>
+          </div>
+          <div class="form-error-msg" id="regConfirmPasswordError">
+            <span>⚠️</span> Passwords do not match.
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary" id="btnSignUpSubmit" style="width: 100%; height: 46px; font-size: 0.95rem; margin-top: 0.5rem;">
+          <span id="btnSignUpText">Register &amp; Access Dashboard</span>
+          <span id="btnSignUpSpinner" style="display: none;">⏳ Creating Profile...</span>
+        </button>
+
+        <p style="text-align: center; margin-top: 1rem; font-size: 0.82rem; color: var(--color-slate-light);">
+          Already have an account? <a href="#" class="auth-link" id="linkSwitchToSignIn">Sign In</a>
+        </p>
+      </form>
+
+      <!-- Return to Public Dashboard Link -->
+      <div style="margin-top: 1.75rem; text-align: center; font-size: 0.82rem;">
+        <a href="index.html" class="auth-link" style="display: inline-flex; align-items: center; gap: 0.35rem; color: var(--color-slate-light);">
+          <span>←</span>
+          <span>Back to Public Dashboard Overview</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= FORGOT PASSWORD MODAL ================= -->
+  <div class="modal-overlay" id="forgotModalOverlay">
+    <div class="modal-content" style="max-width: 440px;">
+      <div class="modal-header">
+        <h3><span>🔑</span> Reset Password</h3>
+        <button class="modal-close" id="btnCloseForgotModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 0.88rem; color: var(--color-slate-medium); margin-bottom: 1.25rem;">
+          Enter your registered municipal email. We will send you secure verification instructions and token to restore access.
+        </p>
+
+        <form id="forgotPasswordForm" novalidate>
+          <div class="form-group">
+            <label class="form-label" for="forgotEmail">Municipal Email Address</label>
+            <div class="input-with-icon">
+              <span class="input-icon-lead">✉️</span>
+              <input type="email" id="forgotEmail" class="form-control" placeholder="officer@smartcity.gov" required>
+            </div>
+            <div class="form-error-msg" id="forgotEmailError">
+              <span>⚠️</span> Please enter a valid registered email.
+            </div>
+          </div>
+
+          <div id="forgotSuccessBox" style="display: none; padding: 0.85rem; background-color: var(--color-success-bg); border: 1px solid var(--color-success-border); border-radius: var(--radius-md); font-size: 0.82rem; color: var(--color-success); margin-bottom: 1rem;">
+            <span>✓</span> <span id="forgotSuccessMsg"></span>
+          </div>
+
+          <div style="display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1.25rem;">
+            <button type="button" class="btn btn-outline" id="btnCancelForgot">Cancel</button>
+            <button type="submit" class="btn btn-primary" id="btnSubmitForgot">Send Reset Link</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Scripts -->
+  <script src="js/auth.js"></script>
+  <script>
+    (function () {
+      'use strict';
+
+      // Elements
+      const tabSignIn = document.getElementById('tabSignIn');
+      const tabSignUp = document.getElementById('tabSignUp');
+      const loginForm = document.getElementById('loginForm');
+      const registerForm = document.getElementById('registerForm');
+      const linkSwitchToSignIn = document.getElementById('linkSwitchToSignIn');
+
+      const loginEmail = document.getElementById('loginEmail');
+      const loginPassword = document.getElementById('loginPassword');
+      const loginRemember = document.getElementById('loginRemember');
+      const btnToggleLoginPassword = document.getElementById('btnToggleLoginPassword');
+      const loginEmailError = document.getElementById('loginEmailError');
+      const loginPasswordError = document.getElementById('loginPasswordError');
+
+      const btnSignInSubmit = document.getElementById('btnSignInSubmit');
+      const btnSignInText = document.getElementById('btnSignInText');
+      const btnSignInSpinner = document.getElementById('btnSignInSpinner');
+
+      const regName = document.getElementById('regName');
+      const regEmail = document.getElementById('regEmail');
+      const regDepartment = document.getElementById('regDepartment');
+      const regRole = document.getElementById('regRole');
+      const regPassword = document.getElementById('regPassword');
+      const regConfirmPassword = document.getElementById('regConfirmPassword');
+      const btnToggleRegPassword = document.getElementById('btnToggleRegPassword');
+      const btnSignUpSubmit = document.getElementById('btnSignUpSubmit');
+      const btnSignUpText = document.getElementById('btnSignUpText');
+      const btnSignUpSpinner = document.getElementById('btnSignUpSpinner');
+
+      const authAlert = document.getElementById('authAlert');
+      const authAlertMsg = document.getElementById('authAlertMsg');
+      const authAlertIcon = document.getElementById('authAlertIcon');
+
+      const linkForgotPassword = document.getElementById('linkForgotPassword');
+      const forgotModalOverlay = document.getElementById('forgotModalOverlay');
+      const btnCloseForgotModal = document.getElementById('btnCloseForgotModal');
+      const btnCancelForgot = document.getElementById('btnCancelForgot');
+      const forgotPasswordForm = document.getElementById('forgotPasswordForm');
+      const forgotEmail = document.getElementById('forgotEmail');
+      const forgotEmailError = document.getElementById('forgotEmailError');
+      const forgotSuccessBox = document.getElementById('forgotSuccessBox');
+      const forgotSuccessMsg = document.getElementById('forgotSuccessMsg');
+
+      // Check if already authenticated; if so, redirect immediately
+      const urlParams = new URLSearchParams(window.location.search);
+      const redirectTarget = urlParams.get('redirect') ? decodeURIComponent(urlParams.get('redirect')) : 'index.html';
+
+      if (window.auth && window.auth.isAuthenticated()) {
+        window.location.href = redirectTarget;
+      }
+
+      // Tab switching
+      function showSignInTab() {
+        tabSignIn.classList.add('active');
+        tabSignUp.classList.remove('active');
+        loginForm.style.display = 'block';
+        registerForm.style.display = 'none';
+        hideAlert();
+      }
+
+      function showSignUpTab() {
+        tabSignUp.classList.add('active');
+        tabSignIn.classList.remove('active');
+        registerForm.style.display = 'block';
+        loginForm.style.display = 'none';
+        hideAlert();
+      }
+
+      tabSignIn.addEventListener('click', showSignInTab);
+      tabSignUp.addEventListener('click', showSignUpTab);
+      if (linkSwitchToSignIn) linkSwitchToSignIn.addEventListener('click', (e) => {
+        e.preventDefault();
+        showSignInTab();
+      });
+
+      // Show/Hide Password toggles
+      function togglePasswordVisibility(input, btn) {
+        if (input.type === 'password') {
+          input.type = 'text';
+          btn.textContent = '🙈';
+        } else {
+          input.type = 'password';
+          btn.textContent = '👁️';
+        }
+      }
+
+      btnToggleLoginPassword.addEventListener('click', () => {
+        togglePasswordVisibility(loginPassword, btnToggleLoginPassword);
+      });
+
+      btnToggleRegPassword.addEventListener('click', () => {
+        togglePasswordVisibility(regPassword, btnToggleRegPassword);
+      });
+
+      // Alert Banner helper
+      function showAlert(msg, isSuccess = false) {
+        authAlert.style.display = 'flex';
+        authAlert.style.backgroundColor = isSuccess ? 'var(--color-success-bg)' : 'var(--color-danger-bg)';
+        authAlert.style.border = isSuccess ? '1px solid var(--color-success-border)' : '1px solid var(--color-danger-border)';
+        authAlert.style.color = isSuccess ? 'var(--color-success)' : 'var(--color-danger)';
+        authAlertIcon.textContent = isSuccess ? '✅' : '⚠️';
+        authAlertMsg.textContent = msg;
+      }
+
+      function hideAlert() {
+        authAlert.style.display = 'none';
+      }
+
+      // Inline validation helpers
+      function setFieldError(input, errorElement, isError) {
+        if (isError) {
+          input.classList.add('is-invalid');
+          errorElement.classList.add('visible');
+        } else {
+          input.classList.remove('is-invalid');
+          errorElement.classList.remove('visible');
+        }
+      }
+
+      loginEmail.addEventListener('input', () => {
+        const val = loginEmail.value.trim();
+        const valid = val.length > 0 && window.auth.isValidEmail(val);
+        setFieldError(loginEmail, loginEmailError, !valid && val.length > 0);
+      });
+
+      loginPassword.addEventListener('input', () => {
+        setFieldError(loginPassword, loginPasswordError, loginPassword.value.length === 0);
+      });
+
+      // Quick 1-Click Demo Account chips
+      document.querySelectorAll('.demo-chip-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          showSignInTab();
+          const email = btn.dataset.email;
+          const pass = btn.dataset.pass;
+          loginEmail.value = email;
+          loginPassword.value = pass;
+          setFieldError(loginEmail, loginEmailError, false);
+          setFieldError(loginPassword, loginPasswordError, false);
+          
+          // Trigger instant simulated login
+          await performLogin(email, pass, true);
+        });
+      });
+
+      // Login Form Submit
+      loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        hideAlert();
+
+        const email = loginEmail.value.trim();
+        const password = loginPassword.value;
+        let hasError = false;
+
+        if (!email || !window.auth.isValidEmail(email)) {
+          setFieldError(loginEmail, loginEmailError, true);
+          hasError = true;
+        } else {
+          setFieldError(loginEmail, loginEmailError, false);
+        }
+
+        if (!password) {
+          setFieldError(loginPassword, loginPasswordError, true);
+          hasError = true;
+        } else {
+          setFieldError(loginPassword, loginPasswordError, false);
+        }
+
+        if (hasError) return;
+
+        await performLogin(email, password, loginRemember.checked);
+      });
+
+      async function performLogin(email, password, rememberMe) {
+        btnSignInSubmit.disabled = true;
+        btnSignInText.style.display = 'none';
+        btnSignInSpinner.style.display = 'inline';
+
+        try {
+          const user = await window.auth.login({ email, password, rememberMe });
+          showAlert(`Welcome, ${user.name}! Redirecting to Municipal Portal...`, true);
+
+          setTimeout(() => {
+            window.location.href = redirectTarget;
+          }, 600);
+        } catch (err) {
+          showAlert(err.message, false);
+          btnSignInSubmit.disabled = false;
+          btnSignInText.style.display = 'inline';
+          btnSignInSpinner.style.display = 'none';
+        }
+      }
+
+      // Registration Form Submit
+      registerForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        hideAlert();
+
+        const name = regName.value.trim();
+        const email = regEmail.value.trim();
+        const department = regDepartment.value;
+        const role = regRole.value;
+        const password = regPassword.value;
+        const confirmPassword = regConfirmPassword.value;
+        let hasError = false;
+
+        const regNameError = document.getElementById('regNameError');
+        const regEmailError = document.getElementById('regEmailError');
+        const regPasswordError = document.getElementById('regPasswordError');
+        const regConfirmPasswordError = document.getElementById('regConfirmPasswordError');
+
+        if (!name) {
+          setFieldError(regName, regNameError, true);
+          hasError = true;
+        } else {
+          setFieldError(regName, regNameError, false);
+        }
+
+        if (!email || !window.auth.isValidEmail(email)) {
+          setFieldError(regEmail, regEmailError, true);
+          hasError = true;
+        } else {
+          setFieldError(regEmail, regEmailError, false);
+        }
+
+        if (password.length < 6) {
+          setFieldError(regPassword, regPasswordError, true);
+          hasError = true;
+        } else {
+          setFieldError(regPassword, regPasswordError, false);
+        }
+
+        if (confirmPassword !== password) {
+          setFieldError(regConfirmPassword, regConfirmPasswordError, true);
+          hasError = true;
+        } else {
+          setFieldError(regConfirmPassword, regConfirmPasswordError, false);
+        }
+
+        if (hasError) return;
+
+        btnSignUpSubmit.disabled = true;
+        btnSignUpText.style.display = 'none';
+        btnSignUpSpinner.style.display = 'inline';
+
+        try {
+          const user = await window.auth.register({ name, email, department, role, password });
+          showAlert(`Council account created successfully for ${user.name}! Entering portal...`, true);
+
+          setTimeout(() => {
+            window.location.href = redirectTarget;
+          }, 650);
+        } catch (err) {
+          showAlert(err.message, false);
+          btnSignUpSubmit.disabled = false;
+          btnSignUpText.style.display = 'inline';
+          btnSignUpSpinner.style.display = 'none';
+        }
+      });
+
+      // Forgot Password Modal Handlers
+      function openForgotModal() {
+        forgotModalOverlay.style.display = 'flex';
+        forgotEmail.value = loginEmail.value;
+        setFieldError(forgotEmail, forgotEmailError, false);
+        forgotSuccessBox.style.display = 'none';
+      }
+
+      function closeForgotModal() {
+        forgotModalOverlay.style.display = 'none';
+      }
+
+      linkForgotPassword.addEventListener('click', (e) => {
+        e.preventDefault();
+        openForgotModal();
+      });
+
+      btnCloseForgotModal.addEventListener('click', closeForgotModal);
+      btnCancelForgot.addEventListener('click', closeForgotModal);
+
+      forgotPasswordForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = forgotEmail.value.trim();
+
+        if (!email || !window.auth.isValidEmail(email)) {
+          setFieldError(forgotEmail, forgotEmailError, true);
+          return;
+        }
+
+        setFieldError(forgotEmail, forgotEmailError, false);
+        const submitBtn = document.getElementById('btnSubmitForgot');
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Sending...';
+
+        try {
+          const res = await window.auth.forgotPassword(email);
+          forgotSuccessBox.style.display = 'block';
+          forgotSuccessMsg.textContent = res.message;
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Send Reset Link';
+
+          setTimeout(() => {
+            closeForgotModal();
+          }, 3500);
+        } catch (err) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Send Reset Link';
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

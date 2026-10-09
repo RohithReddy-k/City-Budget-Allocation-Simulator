@@ -1,0 +1,1291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>City Budget Allocation Simulator | Municipal Decision Support System</title>
+  <meta name="description" content="Municipal budget allocation simulator using Dynamic Programming (0/1 Knapsack Variant) to optimally distribute annual city capital across competing sectors.">
+  <link rel="icon" type="image/svg+xml" href="assets/city-emblem.svg">
+  <link rel="stylesheet" href="css/style.css">
+  <!-- Chart.js CDN for interactive visual analytics -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+  <div class="app-container">
+    <!-- Mobile Sidebar Backdrop Overlay -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="brand-wrapper">
+          <div class="brand-icon">🏛️</div>
+          <div class="brand-text">
+            <h1>CITY BUDGET</h1>
+            <span>SIMULATOR &bull; DP 0/1</span>
+          </div>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-section-label">Main Navigation</div>
+        <ul class="nav-list">
+          <li>
+            <a class="nav-link active" data-page="dashboard">
+              <span class="nav-icon">📊</span>
+              <span>Dashboard</span>
+            </a>
+          </li>
+          <li>
+            <a class="nav-link" data-page="budget-setup">
+              <span class="nav-icon">💰</span>
+              <span>Budget Setup</span>
+            </a>
+          </li>
+          <li>
+            <a class="nav-link" data-page="projects">
+              <span class="nav-icon">📁</span>
+              <span>Projects</span>
+              <span class="nav-badge" id="sidebarProjectCount">0</span>
+            </a>
+          </li>
+          <li>
+            <a class="nav-link" data-page="constraints">
+              <span class="nav-icon">⚖️</span>
+              <span>Constraints</span>
+            </a>
+          </li>
+          <li>
+            <a class="nav-link" data-page="optimize">
+              <span class="nav-icon">🚀</span>
+              <span>Optimize</span>
+            </a>
+          </li>
+          <li>
+            <a class="nav-link" data-page="results">
+              <span class="nav-icon">📈</span>
+              <span>Results</span>
+            </a>
+          </li>
+          <li>
+            <a class="nav-link" data-page="scenarios">
+              <span class="nav-icon">🔄</span>
+              <span>Scenario Comparison</span>
+            </a>
+          </li>
+          <li>
+            <a class="nav-link" data-page="about">
+              <span class="nav-icon">ℹ️</span>
+              <span>About &amp; How It Works</span>
+            </a>
+          </li>
+        </ul>
+      </nav>
+
+      <!-- Sidebar Quick Actions Footer -->
+      <div class="sidebar-footer">
+        <div id="sidebarAuthWidget"></div>
+        <button class="btn-sidebar btn-sidebar-demo" id="btnSidebarLoadDemo">
+          <span>⚡</span>
+          <span>Load Demo Data</span>
+        </button>
+        <button class="btn-sidebar" id="btnSidebarReset">
+          <span>🗑️</span>
+          <span>Reset Simulation</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Application Wrapper -->
+    <div class="main-wrapper">
+      <!-- Top Civic Header Bar -->
+      <header class="top-header">
+        <div class="header-left">
+          <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Toggle Navigation">☰</button>
+          <div class="page-breadcrumb">
+            <span class="page-breadcrumb-category">Smart City Governance Suite</span>
+            <span class="page-title-text" id="topHeaderTitle">Dashboard Overview</span>
+          </div>
+        </div>
+
+        <div class="header-right">
+          <!-- Live Fiscal Status Pill -->
+          <div class="fiscal-status-pill" id="headerFiscalPill" style="cursor: pointer;" title="Click to adjust municipal budget">
+            <div class="fiscal-metric-item">
+              <span class="fiscal-metric-label">Budget:</span>
+              <span class="fiscal-metric-val" id="pillTotalBudget">₹100 Cr</span>
+            </div>
+            <span style="color: var(--border-color-dark);">|</span>
+            <div class="fiscal-metric-item">
+              <span class="fiscal-metric-label">Allocated:</span>
+              <span class="fiscal-metric-val green" id="pillUsedBudget">₹0 Cr</span>
+            </div>
+            <span style="color: var(--border-color-dark);">|</span>
+            <div class="fiscal-metric-item">
+              <span class="fiscal-metric-label">Remaining:</span>
+              <span class="fiscal-metric-val" id="pillRemainingBudget">₹100 Cr</span>
+            </div>
+          </div>
+
+          <button class="btn-header-optimize" id="btnHeaderOptimize">
+            <span>🚀</span>
+            <span>Optimize Now</span>
+          </button>
+
+          <!-- Authenticated Officer Session Widget -->
+          <div id="headerAuthWidget"></div>
+        </div>
+      </header>
+
+      <!-- Content Views Container -->
+      <main class="page-container">
+
+        <!-- ================= PAGE 1: DASHBOARD ================= -->
+        <section class="page-view active" id="view-dashboard">
+          <!-- Hero Banner -->
+          <div class="hero-banner">
+            <div class="hero-content">
+              <span class="hero-tag">Municipal Capital Planning • FY 2026-27</span>
+              <h1 class="hero-title">CITY BUDGET ALLOCATION SIMULATOR</h1>
+              <p class="hero-subtitle">Optimize limited municipal budgets for maximum social impact using constrained Dynamic Programming.</p>
+              <div class="hero-actions">
+                <button class="btn btn-hero-primary" id="btnHeroStart">
+                  <span>🚀</span>
+                  <span>Start Simulation</span>
+                </button>
+                <button class="btn btn-hero-secondary" id="btnHeroDemo">
+                  <span>⚡</span>
+                  <span>Load Sample Data</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Summary KPI Cards -->
+          <div class="metrics-grid">
+            <div class="metric-card" id="cardDashTotalBudget" style="--card-accent: #2563eb; --icon-bg: #eff6ff; --icon-color: #2563eb; cursor: pointer;" title="Click to adjust annual budget">
+              <div class="metric-info">
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                  <span class="metric-title">Total Budget</span>
+                  <span style="font-size: 0.72rem; color: #2563eb; font-weight: 700; background: #eff6ff; padding: 2px 6px; border-radius: 4px;">Edit ✏️</span>
+                </div>
+                <span class="metric-value" id="dashTotalBudget">₹100 Cr</span>
+                <span class="metric-subtext">Approved annual outlay</span>
+              </div>
+              <div class="metric-icon-box">💰</div>
+            </div>
+
+            <div class="metric-card" style="--card-accent: #059669; --icon-bg: #ecfdf5; --icon-color: #059669;">
+              <div class="metric-info">
+                <span class="metric-title">Allocated Budget</span>
+                <span class="metric-value" id="dashAllocatedBudget">₹0 Cr</span>
+                <span class="metric-subtext" id="dashAllocatedPct">0.0% utilized</span>
+              </div>
+              <div class="metric-icon-box">💸</div>
+            </div>
+
+            <div class="metric-card" style="--card-accent: #0284c7; --icon-bg: #f0f9ff; --icon-color: #0284c7;">
+              <div class="metric-info">
+                <span class="metric-title">Remaining Budget</span>
+                <span class="metric-value" id="dashRemainingBudget">₹100 Cr</span>
+                <span class="metric-subtext">Unallocated reserves</span>
+              </div>
+              <div class="metric-icon-box">🪙</div>
+            </div>
+
+            <div class="metric-card" style="--card-accent: #7c3aed; --icon-bg: #f5f3ff; --icon-color: #7c3aed;">
+              <div class="metric-info">
+                <span class="metric-title">Total Projects</span>
+                <span class="metric-value" id="dashTotalProjects">0</span>
+                <span class="metric-subtext" id="dashProjectsSummary">0 candidate projects</span>
+              </div>
+              <div class="metric-icon-box">📋</div>
+            </div>
+
+            <div class="metric-card" style="--card-accent: #e11d48; --icon-bg: #fff1f2; --icon-color: #e11d48;">
+              <div class="metric-info">
+                <span class="metric-title">Maximum Impact</span>
+                <span class="metric-value" id="dashMaxImpact">0</span>
+                <span class="metric-subtext">Cumulative social welfare pts</span>
+              </div>
+              <div class="metric-icon-box">🌟</div>
+            </div>
+          </div>
+
+          <!-- How It Works Civic Pipeline -->
+          <div class="card" style="margin-bottom: 2rem;">
+            <div class="card-header">
+              <h3><span>⚙️</span> How It Works — 5-Step Optimization Process</h3>
+              <span class="card-subtitle">Transparent mathematical decision pipeline</span>
+            </div>
+            <div class="steps-pipeline">
+              <div class="step-card" data-navigate="budget-setup" style="cursor: pointer;" title="Click to configure budget">
+                <div class="step-number">1</div>
+                <div class="step-title">Set Budget ↗</div>
+                <div class="step-desc">Specify the city's annual municipal capital expenditure cap in ₹ Crores.</div>
+              </div>
+              <div class="step-card" data-navigate="projects" style="cursor: pointer;" title="Click to manage projects">
+                <div class="step-number">2</div>
+                <div class="step-title">Add Projects ↗</div>
+                <div class="step-desc">Register competing capital works across 7 vital sectors with cost &amp; impact.</div>
+              </div>
+              <div class="step-card" data-navigate="constraints" style="cursor: pointer;" title="Click to configure constraints">
+                <div class="step-number">3</div>
+                <div class="step-title">Set Constraints ↗</div>
+                <div class="step-desc">Configure mandatory municipal priorities, category caps, and minimums.</div>
+              </div>
+              <div class="step-card" data-navigate="optimize" style="cursor: pointer;" title="Click to run optimizer">
+                <div class="step-number">4</div>
+                <div class="step-title">Optimize ↗</div>
+                <div class="step-desc">Execute the 0/1 Knapsack Dynamic Programming algorithm to find global maximum impact.</div>
+              </div>
+              <div class="step-card" data-navigate="results" style="cursor: pointer;" title="Click to view results">
+                <div class="step-number">5</div>
+                <div class="step-title">Analyze Results ↗</div>
+                <div class="step-desc">Review allocation charts, trade-offs, and compare fiscal scenarios.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Preview / Live Status -->
+          <div class="card">
+            <div class="card-header">
+              <h3><span>📋</span> Current Projects Overview</h3>
+              <button class="btn btn-sm btn-outline" id="btnDashViewProjects">Manage Projects →</button>
+            </div>
+            <div id="dashProjectsTableContainer">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+        </section>
+
+
+        <!-- ================= PAGE 2: BUDGET SETUP ================= -->
+        <section class="page-view" id="view-budget-setup">
+          <div class="section-header">
+            <h2>Annual Municipal Capital Budget Setup</h2>
+            <p>Define the total funding available for capital allocation in Indian Crores (₹ Cr).</p>
+          </div>
+
+          <div class="budget-setup-layout">
+            <!-- Left Card: Input & Presets -->
+            <div class="card">
+              <div class="card-header">
+                <h3><span>💰</span> Set Annual Municipal Budget</h3>
+                <span class="badge badge-info">Fiscal Year 2026-27</span>
+              </div>
+
+              <form id="budgetForm">
+                <label class="form-label" for="inputBudget">
+                  Total Municipal Budget (₹ in Crores) <span class="required">*</span>
+                </label>
+                <div class="budget-input-wrapper">
+                  <span class="currency-prefix">₹</span>
+                  <input type="number" id="inputBudget" class="input-huge-budget" min="1" step="0.5" placeholder="100" value="100" required>
+                </div>
+                <p class="form-help">Enter numeric budget in Crores. Values such as ₹80, ₹100, ₹150 or ₹200.5 Cr are supported.</p>
+
+                <div style="margin-top: 1.25rem;">
+                  <span class="form-label">Quick Budget Presets:</span>
+                  <div class="presets-container">
+                    <button type="button" class="preset-chip" data-val="50">₹50 Cr</button>
+                    <button type="button" class="preset-chip" data-val="80">₹80 Cr</button>
+                    <button type="button" class="preset-chip active" data-val="100">₹100 Cr</button>
+                    <button type="button" class="preset-chip" data-val="120">₹120 Cr</button>
+                    <button type="button" class="preset-chip" data-val="150">₹150 Cr</button>
+                    <button type="button" class="preset-chip" data-val="200">₹200 Cr</button>
+                  </div>
+                </div>
+
+                <div style="margin-top: 1.75rem; display: flex; gap: 0.75rem;">
+                  <button type="submit" class="btn btn-primary btn-lg">
+                    <span>💾</span>
+                    <span>Save &amp; Update Budget</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            <!-- Right Card: Live Utilization & Context -->
+            <div class="card">
+              <div class="card-header">
+                <h3><span>📊</span> Fiscal Envelope Overview</h3>
+                <span class="badge badge-success" id="budgetStatusBadge">Active Budget</span>
+              </div>
+
+              <div style="margin: 1rem 0;">
+                <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.5rem;">
+                  <span style="font-size: 0.9rem; color: var(--color-slate-light); font-weight: 600;">Total Budget:</span>
+                  <span style="font-size: 1.75rem; font-weight: 800; color: var(--color-navy);" id="displayBudgetTotal">₹100 Cr</span>
+                </div>
+
+                <!-- Progress Bar -->
+                <div class="progress-container">
+                  <div class="progress-labels">
+                    <span id="labelBudgetUsed">Budget Used: ₹0 Cr (0%)</span>
+                    <span id="labelBudgetRemaining">Remaining: ₹100 Cr</span>
+                  </div>
+                  <div class="progress-track">
+                    <div class="progress-fill" id="budgetSetupProgressBar" style="width: 0%;"></div>
+                  </div>
+                </div>
+              </div>
+
+              <div style="background-color: var(--color-bg-muted); padding: 1.25rem; border-radius: var(--radius-md); margin-top: 1.5rem;">
+                <h4 style="font-size: 0.9rem; font-weight: 700; margin-bottom: 0.5rem; color: var(--color-navy);">💡 Municipal Budgeting Insights</h4>
+                <ul style="padding-left: 1.25rem; font-size: 0.85rem; color: var(--color-slate-medium); line-height: 1.6;">
+                  <li>The total budget serves as the capacity <code>W</code> in the 0/1 Knapsack optimization algorithm.</li>
+                  <li>Setting an accurate budget ensures the dynamic programming matrix accurately bounds feasibility.</li>
+                  <li>You can test multiple budget levels simultaneously under the <strong>Scenario Comparison</strong> page.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </section>
+
+
+        <!-- ================= PAGE 3: PROJECTS ================= -->
+        <section class="page-view" id="view-projects">
+          <div class="section-header">
+            <h2>Municipal Project Management</h2>
+            <p>Add, edit, or remove candidate infrastructure and public welfare projects.</p>
+          </div>
+
+          <div class="projects-layout">
+            <!-- Add / Edit Project Form -->
+            <div class="card">
+              <div class="card-header">
+                <h3 id="projectFormHeading"><span>➕</span> Add Project</h3>
+                <span class="card-subtitle">Candidate Portfolio</span>
+              </div>
+
+              <form id="projectForm">
+                <input type="hidden" id="editProjectId" value="">
+
+                <div class="form-group">
+                  <label class="form-label" for="projName">
+                    Project Name <span class="required">*</span>
+                  </label>
+                  <input type="text" id="projName" class="form-control" placeholder="e.g., Road Repair, Hospital Upgrade" required>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="projCategory">
+                    Category <span class="required">*</span>
+                  </label>
+                  <select id="projCategory" class="form-control" required>
+                    <option value="Roads">Roads 🛣️</option>
+                    <option value="Sanitation">Sanitation ♻️</option>
+                    <option value="Healthcare">Healthcare 🏥</option>
+                    <option value="Education">Education 🎓</option>
+                    <option value="Water Supply">Water Supply 💧</option>
+                    <option value="Environment">Environment 🌳</option>
+                    <option value="Public Infrastructure">Public Infrastructure 🏛️</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="projCost">
+                    Cost (₹ in Crores) <span class="required">*</span>
+                  </label>
+                  <input type="number" id="projCost" class="form-control" min="0.1" step="0.5" placeholder="e.g., 20" required>
+                  <span class="form-help">Must be a positive value greater than 0.</span>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="projImpact">
+                    Impact Score (1 to 100) <span class="required">*</span>
+                  </label>
+                  <div class="impact-slider-container">
+                    <input type="range" id="projImpactSlider" min="1" max="100" value="75">
+                    <input type="number" id="projImpact" class="form-control" min="1" max="100" value="75" style="width: 80px;" required>
+                  </div>
+                  <span class="form-help">Higher score reflects greater social welfare and citizen reach.</span>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="projPriority">
+                    Priority <span class="required">*</span>
+                  </label>
+                  <select id="projPriority" class="form-control" required>
+                    <option value="High">High Priority</option>
+                    <option value="Medium" selected>Medium Priority</option>
+                    <option value="Low">Low Priority</option>
+                  </select>
+                </div>
+
+                <div class="form-group" style="display: flex; align-items: center; gap: 0.6rem; margin-top: 0.5rem;">
+                  <input type="checkbox" id="projMandatory" style="width: 18px; height: 18px; cursor: pointer;">
+                  <label for="projMandatory" style="font-size: 0.85rem; font-weight: 600; cursor: pointer;">
+                    Mandatory Project (Must be funded)
+                  </label>
+                </div>
+
+                <div style="display: flex; gap: 0.5rem; margin-top: 1.5rem;">
+                  <button type="submit" class="btn btn-primary" id="btnSubmitProject" style="flex: 1;">
+                    <span>➕</span>
+                    <span id="btnSubmitProjectText">Add Project</span>
+                  </button>
+                  <button type="button" class="btn btn-outline" id="btnCancelProjectEdit" style="display: none;">Cancel</button>
+                </div>
+              </form>
+            </div>
+
+            <!-- Projects Table & Filters -->
+            <div class="card">
+              <div class="card-header">
+                <h3><span>📋</span> Registered Projects</h3>
+                <div style="display: flex; gap: 0.5rem;">
+                  <button class="btn btn-sm btn-outline" id="btnProjectsLoadDemo">⚡ Load Demo</button>
+                  <button class="btn btn-sm btn-danger" id="btnClearAllProjects">🗑️ Clear All</button>
+                </div>
+              </div>
+
+              <!-- Filter Bar -->
+              <div class="filter-bar">
+                <input type="text" id="projectSearchInput" class="form-control search-input" placeholder="🔍 Search projects...">
+                <select id="filterCategory" class="form-control" style="width: auto;">
+                  <option value="ALL">All Categories</option>
+                  <option value="Roads">Roads</option>
+                  <option value="Sanitation">Sanitation</option>
+                  <option value="Healthcare">Healthcare</option>
+                  <option value="Education">Education</option>
+                  <option value="Water Supply">Water Supply</option>
+                  <option value="Environment">Environment</option>
+                  <option value="Public Infrastructure">Public Infrastructure</option>
+                </select>
+                <select id="filterPriority" class="form-control" style="width: auto;">
+                  <option value="ALL">All Priorities</option>
+                  <option value="High">High</option>
+                  <option value="Medium">Medium</option>
+                  <option value="Low">Low</option>
+                </select>
+              </div>
+
+              <!-- Table -->
+              <div class="table-responsive">
+                <table class="data-table" id="projectsTable">
+                  <thead>
+                    <tr>
+                      <th>Project Name</th>
+                      <th>Category</th>
+                      <th>Cost</th>
+                      <th>Impact</th>
+                      <th>Priority</th>
+                      <th>Efficiency</th>
+                      <th>Status</th>
+                      <th style="text-align: right;">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="projectsTableBody">
+                    <!-- Populated by JS -->
+                  </tbody>
+                </table>
+              </div>
+
+              <div id="projectsEmptyState" class="empty-state" style="display: none;">
+                <div class="empty-state-icon">📁</div>
+                <h3>No Projects Registered</h3>
+                <p>Add candidate projects using the form on the left or load the standard municipal demo portfolio.</p>
+                <button class="btn btn-primary" id="btnEmptyLoadDemo">⚡ Load Demo Projects</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+
+        <!-- ================= PAGE 4: CONSTRAINTS ================= -->
+        <section class="page-view" id="view-constraints">
+          <div class="section-header">
+            <h2>Policy &amp; Statutory Constraints</h2>
+            <p>Define mandatory projects, statutory category floors, and maximum allocation caps.</p>
+          </div>
+
+          <div class="budget-setup-layout">
+            <!-- Constraints Form Card -->
+            <div class="card">
+              <div class="card-header">
+                <h3><span>⚖️</span> Configure Active Constraints</h3>
+                <span class="card-subtitle">Municipal Bylaw Rules</span>
+              </div>
+
+              <!-- Quick Policy Presets -->
+              <div style="margin-bottom: 1.25rem;">
+                <span class="form-label">Quick Policy Presets:</span>
+                <div class="presets-container">
+                  <button type="button" class="preset-chip active" id="presetPolicyDefault">🏛️ Default Policy</button>
+                  <button type="button" class="preset-chip" id="presetPolicyStrict">🏥 Health &amp; Water Mandate</button>
+                  <button type="button" class="preset-chip" id="presetPolicyPure">🔓 Pure 0/1 Knapsack (No Caps)</button>
+                </div>
+              </div>
+
+              <form id="constraintsForm">
+                <!-- 1. Max Total Budget Constraint -->
+                <div class="form-group">
+                  <label class="form-label" for="constMaxBudget">
+                    1. Maximum Total Budget Limit (₹ Cr)
+                  </label>
+                  <input type="number" id="constMaxBudget" class="form-control" min="1" step="0.5" placeholder="Optional cap (e.g. 100)">
+                  <span class="form-help">Optional statutory cap: optimization will never exceed this ceiling.</span>
+                </div>
+
+                <!-- 2. Minimum Allocation per Category -->
+                <div class="form-group">
+                  <label class="form-label">
+                    2. Minimum Category Allocations (₹ Cr)
+                  </label>
+                  <p class="form-help" style="margin-bottom: 0.5rem;">Guarantees baseline funding for vital civic services.</p>
+                  <div class="form-row">
+                    <div>
+                      <label class="form-label" style="font-weight: 500;">🏥 Minimum Healthcare Allocation:</label>
+                      <input type="number" id="constMinHealthcare" class="form-control" min="0" step="1" placeholder="e.g. 20">
+                    </div>
+                    <div>
+                      <label class="form-label" style="font-weight: 500;">💧 Minimum Water Supply:</label>
+                      <input type="number" id="constMinWater" class="form-control" min="0" step="1" placeholder="e.g. 15">
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 3. Maximum Allocation per Category -->
+                <div class="form-group">
+                  <label class="form-label">
+                    3. Maximum Category Allocations (₹ Cr)
+                  </label>
+                  <p class="form-help" style="margin-bottom: 0.5rem;">Prevents over-concentration of municipal funds in a single domain.</p>
+                  <div class="form-row">
+                    <div>
+                      <label class="form-label" style="font-weight: 500;">🎓 Maximum Education Allocation:</label>
+                      <input type="number" id="constMaxEducation" class="form-control" min="0" step="1" placeholder="e.g. 30">
+                    </div>
+                    <div>
+                      <label class="form-label" style="font-weight: 500;">🛣️ Maximum Roads Allocation:</label>
+                      <input type="number" id="constMaxRoads" class="form-control" min="0" step="1" placeholder="e.g. 40">
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 4. Mandatory Projects Selection -->
+                <div class="form-group">
+                  <label class="form-label">
+                    4. Mandatory Projects (Must Be Funded)
+                  </label>
+                  <p class="form-help" style="margin-bottom: 0.5rem;">Select projects that the city council has mandated as compulsory.</p>
+                  <div id="mandatoryProjectsChecklist" style="max-height: 180px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 0.75rem; background: var(--color-bg-muted);">
+                    <!-- Dynamic checkboxes -->
+                  </div>
+                </div>
+
+                <div style="display: flex; gap: 0.75rem; margin-top: 1.5rem;">
+                  <button type="submit" class="btn btn-primary">
+                    <span>💾</span>
+                    <span>Save &amp; Apply Constraints</span>
+                  </button>
+                  <button type="button" class="btn btn-outline" id="btnResetConstraints">Reset Constraints</button>
+                </div>
+              </form>
+            </div>
+
+            <!-- Active Constraints Summary -->
+            <div class="card">
+              <div class="card-header">
+                <h3><span>📋</span> Constraint Enforcement Summary</h3>
+                <span class="badge badge-info" id="constraintCountBadge">3 Active</span>
+              </div>
+
+              <div id="activeConstraintsList" style="display: flex; flex-direction: column; gap: 0.75rem;">
+                <!-- Populated dynamically -->
+              </div>
+
+              <div style="background-color: var(--color-bg-muted); padding: 1.25rem; border-radius: var(--radius-md); margin-top: 1.5rem;">
+                <h4 style="font-size: 0.9rem; font-weight: 700; margin-bottom: 0.5rem; color: var(--color-navy);">💡 Mathematical Constraint Handling</h4>
+                <p style="font-size: 0.85rem; color: var(--color-slate-medium); line-height: 1.5;">
+                  Mandatory projects are pre-allocated by deducting their cost from the knapsack budget capacity, ensuring statutory compliance. Category caps are checked dynamically to guarantee no sector exceeds statutory guidelines.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+
+        <!-- ================= PAGE 5: OPTIMIZE ================= -->
+        <section class="page-view" id="view-optimize">
+          <div class="section-header">
+            <h2>Dynamic Programming Optimization Engine</h2>
+            <p>Run the 0/1 Knapsack algorithm to discover the mathematically optimal capital allocation.</p>
+          </div>
+
+          <div class="card">
+            <div class="optimize-panel">
+              <div class="optimize-icon-radar">⚡</div>
+              <h2 style="font-size: 1.75rem; font-weight: 800; color: var(--color-navy); margin-bottom: 0.5rem;">
+                Ready to Compute Optimal Allocation
+              </h2>
+              <p style="color: var(--color-slate-light); max-width: 520px; margin-bottom: 2rem;">
+                The simulator evaluates all possible project combinations using a 0/1 Knapsack Dynamic Programming recurrence relation to maximize total social impact under ₹<span id="optBudgetVal">100</span> Cr.
+                <button type="button" class="btn btn-sm btn-outline" id="btnOptChangeBudget" style="margin-left: 0.5rem; padding: 0.2rem 0.6rem; font-size: 0.75rem; vertical-align: middle;">✏️ Change Budget</button>
+              </p>
+
+              <!-- Large Action Button -->
+              <button class="btn-huge-optimize" id="btnRunOptimization">
+                <span>🚀</span>
+                <span>OPTIMIZE BUDGET</span>
+              </button>
+
+              <!-- Pre-Optimization Checklist Card -->
+              <div class="checklist-card">
+                <div class="card" style="box-shadow: none; border-color: var(--border-color);">
+                  <div class="card-header" style="margin-bottom: 0.5rem; padding-bottom: 0.5rem;">
+                    <h4 style="font-size: 0.95rem; font-weight: 700;">Pre-Optimization Status</h4>
+                    <span class="badge badge-success">Feasible</span>
+                  </div>
+                  <div class="checklist-item">
+                    <span>💰</span>
+                    <div style="flex: 1;"><strong>Total Budget:</strong> <span id="optCheckBudget">₹100 Cr</span> <button type="button" class="btn btn-sm btn-outline" id="btnOptChangeBudgetChecklist" style="margin-left: 0.5rem; padding: 0.15rem 0.5rem; font-size: 0.72rem;">✏️ Edit</button></div>
+                    <span class="badge badge-neutral">Capacity W</span>
+                  </div>
+                  <div class="checklist-item">
+                    <span>📁</span>
+                    <div style="flex: 1;"><strong>Registered Projects:</strong> <span id="optCheckProjects">8 items</span></div>
+                    <span class="badge badge-neutral">Items N</span>
+                  </div>
+                  <div class="checklist-item">
+                    <span>⚖️</span>
+                    <div style="flex: 1;"><strong>Active Constraints:</strong> <span id="optCheckConstraints">Active</span></div>
+                    <span class="badge badge-info">Multi-Constrained</span>
+                  </div>
+                  <div class="checklist-item">
+                    <span>⚡</span>
+                    <div style="flex: 1;"><strong>Algorithm:</strong> 0/1 Knapsack Dynamic Programming Matrix</div>
+                    <span class="badge badge-success">O(N &times; W)</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Live Completion Result Banner (Hidden initially) -->
+              <div id="optimizationSuccessBanner" style="display: none; width: 100%; max-width: 600px; margin-top: 1rem; background-color: var(--color-success-bg); border: 1px solid var(--color-success-border); border-radius: var(--radius-md); padding: 1.25rem;">
+                <div style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; color: var(--color-success); font-weight: 800; font-size: 1.15rem; margin-bottom: 0.5rem;">
+                  <span>✓</span>
+                  <span>Optimization Complete</span>
+                </div>
+                <div style="display: flex; justify-content: space-around; text-align: center; margin-top: 0.75rem;">
+                  <div>
+                    <div style="font-size: 0.75rem; color: var(--color-slate-light); text-transform: uppercase;">Maximum Impact</div>
+                    <div style="font-size: 1.5rem; font-weight: 800; color: var(--color-navy);" id="bannerMaxImpact">--</div>
+                  </div>
+                  <div>
+                    <div style="font-size: 0.75rem; color: var(--color-slate-light); text-transform: uppercase;">Budget Used</div>
+                    <div style="font-size: 1.5rem; font-weight: 800; color: var(--color-success);" id="bannerBudgetUsed">--</div>
+                  </div>
+                  <div>
+                    <div style="font-size: 0.75rem; color: var(--color-slate-light); text-transform: uppercase;">Remaining Budget</div>
+                    <div style="font-size: 1.5rem; font-weight: 800; color: var(--color-navy);" id="bannerBudgetRemaining">--</div>
+                  </div>
+                </div>
+                <div style="margin-top: 1.25rem;">
+                  <button class="btn btn-success" id="btnBannerViewResults" style="width: 100%;">
+                    <span>📈</span>
+                    <span>View Detailed Results &amp; Analytics</span>
+                  </button>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </section>
+
+
+        <!-- ================= PAGE 6: RESULTS ================= -->
+        <section class="page-view" id="view-results">
+          <div class="section-header" style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
+            <div>
+              <h2>Optimal Budget Allocation Results</h2>
+              <p>Dynamic Programming solution maximizing social impact within fiscal boundaries.</p>
+            </div>
+            <div style="display: flex; gap: 0.5rem;">
+              <button class="btn btn-outline" id="btnPrintReport">🖨️ Print Report</button>
+              <button class="btn btn-outline" id="btnExportCSV">📥 Export CSV</button>
+            </div>
+          </div>
+
+          <!-- Summary KPI Cards -->
+          <div class="metrics-grid">
+            <div class="metric-card" style="--card-accent: #2563eb;">
+              <div class="metric-info">
+                <span class="metric-title">Total Budget</span>
+                <span class="metric-value" id="resTotalBudget">₹100 Cr</span>
+                <span class="metric-subtext">Fiscal Envelope</span>
+              </div>
+              <div class="metric-icon-box">💰</div>
+            </div>
+
+            <div class="metric-card" style="--card-accent: #059669;">
+              <div class="metric-info">
+                <span class="metric-title">Budget Used</span>
+                <span class="metric-value" id="resUsedBudget">₹0 Cr</span>
+                <span class="metric-subtext" id="resUsedPercentBadge">0% Utilized</span>
+              </div>
+              <div class="metric-icon-box">💸</div>
+            </div>
+
+            <div class="metric-card" style="--card-accent: #0284c7;">
+              <div class="metric-info">
+                <span class="metric-title">Remaining Budget</span>
+                <span class="metric-value" id="resRemainingBudget">₹0 Cr</span>
+                <span class="metric-subtext">Unallocated Reserve</span>
+              </div>
+              <div class="metric-icon-box">🪙</div>
+            </div>
+
+            <div class="metric-card" style="--card-accent: #7c3aed;">
+              <div class="metric-info">
+                <span class="metric-title">Maximum Impact</span>
+                <span class="metric-value" id="resMaxImpact">0</span>
+                <span class="metric-subtext">Optimal Objective Value</span>
+              </div>
+              <div class="metric-icon-box">🌟</div>
+            </div>
+
+            <div class="metric-card" style="--card-accent: #d97706;">
+              <div class="metric-info">
+                <span class="metric-title">Selected Projects</span>
+                <span class="metric-value" id="resSelectedCount">0</span>
+                <span class="metric-subtext" id="resSelectedRatio">0 funded</span>
+              </div>
+              <div class="metric-icon-box">✅</div>
+            </div>
+          </div>
+
+          <!-- Utilization Progress Bar -->
+          <div class="card" style="margin-bottom: 1.5rem;">
+            <div class="card-header" style="margin-bottom: 0.5rem; padding-bottom: 0.5rem;">
+              <h3><span>📊</span> Budget Utilization Breakdown</h3>
+              <span class="badge badge-success" id="resUtilizationBadge">0% Deployed</span>
+            </div>
+            <div class="progress-container">
+              <div class="progress-labels">
+                <span id="resProgressUsedLabel">Budget Used: ₹0 Cr (0%)</span>
+                <span id="resProgressRemainingLabel">Remaining Reserve: ₹0 Cr (0%)</span>
+              </div>
+              <div class="progress-track">
+                <div class="progress-fill" id="resProgressBar" style="width: 0%;"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Interactive What-If Budget Sensitivity Live Slider -->
+          <div class="card" style="margin-bottom: 2rem; background: linear-gradient(135deg, #f8fafc, #eff6ff); border: 1px solid #bfdbfe;">
+            <div class="card-header" style="margin-bottom: 0.5rem; padding-bottom: 0.5rem;">
+              <h3 style="color: var(--color-primary-dark);"><span>🎛️</span> Interactive "What-If" Budget Simulation</h3>
+              <span class="badge badge-info">Real-Time DP Recomputation</span>
+            </div>
+            <p style="font-size: 0.85rem; color: var(--color-slate-medium); margin-bottom: 0.75rem;">
+              Adjust the municipal capital slider to instantly re-execute Dynamic Programming and observe how public welfare scales across varying financial envelopes.
+            </p>
+            <div style="display: flex; align-items: center; gap: 1.25rem; flex-wrap: wrap;">
+              <span style="font-weight: 700; color: var(--color-navy); font-size: 0.9rem;">Simulate Budget:</span>
+              <input type="range" id="whatIfSlider" min="40" max="200" step="5" value="100" style="flex: 1; min-width: 200px; cursor: pointer; accent-color: var(--color-primary);">
+              <span style="font-size: 1.25rem; font-weight: 800; color: var(--color-primary); min-width: 90px;" id="whatIfDisplay">₹100 Cr</span>
+              <button class="btn btn-sm btn-primary" id="btnApplyWhatIf">Apply As Official Budget</button>
+            </div>
+            <div id="whatIfResultsPreview" style="margin-top: 0.75rem; font-size: 0.82rem; color: var(--color-slate-medium); font-weight: 600;">
+              Simulated Result: <span id="whatIfImpactSpan" style="color: var(--color-primary);">-- pts</span> | Used: <span id="whatIfUsedSpan" style="color: var(--color-success);">-- Cr</span> | Selected: <span id="whatIfCountSpan">-- projects</span>
+            </div>
+          </div>
+
+          <!-- Visual Analytics Charts (Chart.js) -->
+          <div class="charts-grid">
+            <!-- Chart 1: Doughnut / Pie Chart (Category Breakdown) -->
+            <div class="card chart-card">
+              <div class="card-header">
+                <h3><span>🍩</span> Budget Allocation by Category</h3>
+                <span class="card-subtitle">Expenditure Distribution (₹ Cr)</span>
+              </div>
+              <div class="chart-wrapper">
+                <canvas id="categoryDoughnutChart"></canvas>
+              </div>
+            </div>
+
+            <!-- Chart 2: Project Impact Bar Chart -->
+            <div class="card chart-card">
+              <div class="card-header">
+                <h3><span>📊</span> Project Impact Scores</h3>
+                <span class="card-subtitle">Selected vs. Rejected Projects</span>
+              </div>
+              <div class="chart-wrapper">
+                <canvas id="projectImpactBarChart"></canvas>
+              </div>
+            </div>
+
+            <!-- Chart 3: Category Impact Chart -->
+            <div class="card chart-card">
+              <div class="card-header">
+                <h3><span>🌟</span> Category Impact Contribution</h3>
+                <span class="card-subtitle">Cumulative Impact Points by Sector</span>
+              </div>
+              <div class="chart-wrapper">
+                <canvas id="categoryImpactChart"></canvas>
+              </div>
+            </div>
+
+            <!-- Chart 4: Efficiency Frontier (Impact per Crore) -->
+            <div class="card chart-card">
+              <div class="card-header">
+                <h3><span>⚡</span> Social Return on Investment (ROI)</h3>
+                <span class="card-subtitle">Impact Points Delivered per ₹ Crore</span>
+              </div>
+              <div class="chart-wrapper">
+                <canvas id="efficiencyBarChart"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- Selected Projects Table -->
+          <div class="card" style="margin-bottom: 2rem;">
+            <div class="card-header">
+              <h3 style="color: var(--color-success);"><span>✅</span> Selected Projects (Approved for Execution)</h3>
+              <span class="badge badge-success" id="badgeSelectedCount">5 Projects</span>
+            </div>
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Project</th>
+                    <th>Category</th>
+                    <th>Cost (₹ Cr)</th>
+                    <th>Impact Score</th>
+                    <th>Priority</th>
+                    <th>Efficiency (Pts/₹Cr)</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="selectedProjectsTableBody">
+                  <!-- Populated by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Rejected Projects Table -->
+          <div class="card" style="margin-bottom: 2rem;">
+            <div class="card-header">
+              <h3 style="color: var(--color-danger);"><span>❌</span> Rejected Projects (Deferred / Excluded)</h3>
+              <span class="badge badge-danger" id="badgeRejectedCount">3 Projects</span>
+            </div>
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Project</th>
+                    <th>Category</th>
+                    <th>Cost (₹ Cr)</th>
+                    <th>Impact Score</th>
+                    <th>Priority</th>
+                    <th>Rejection Reason</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="rejectedProjectsTableBody">
+                  <!-- Populated by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Section: Why Were These Projects Selected? -->
+          <div class="card" style="margin-bottom: 2rem;">
+            <div class="card-header">
+              <h3><span>💡</span> Why Were These Projects Selected?</h3>
+              <span class="card-subtitle">Algorithmic Decision Explanations</span>
+            </div>
+            <p style="font-size: 0.88rem; color: var(--color-slate-light); margin-bottom: 1rem;">
+              The Dynamic Programming algorithm evaluates trade-offs between project costs and social impact scores. Here is the mathematical and policy rationale behind each selected project:
+            </p>
+            <div class="reasoning-list" id="selectionReasoningList">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+
+          <!-- DP Matrix Inspector (Educational feature for mentors/college judges) -->
+          <div class="card">
+            <div class="card-header">
+              <h3><span>🔢</span> Dynamic Programming Matrix Inspector (Educational)</h3>
+              <span class="badge badge-info">2D State Matrix DP[i][b]</span>
+            </div>
+            <p style="font-size: 0.85rem; color: var(--color-slate-medium);">
+              Examine the sample state transitions calculated by the recurrence: <code>dp[i][b] = max(dp[i-1][b], dp[i-1][b - cost[i]] + impact[i])</code>.
+            </p>
+            <div class="dp-matrix-container" id="dpMatrixContainer">
+              <!-- Rendered table -->
+            </div>
+          </div>
+        </section>
+
+
+        <!-- ================= PAGE 7: SCENARIO COMPARISON ================= -->
+        <section class="page-view" id="view-scenarios">
+          <div class="section-header">
+            <h2>Multi-Scenario Budget Simulation &amp; Sensitivity Analysis</h2>
+            <p>Evaluate how increasing or decreasing the city budget affects achievable social impact.</p>
+          </div>
+
+          <!-- Scenario Comparison Cards -->
+          <div class="scenarios-grid">
+            <!-- Scenario A -->
+            <div class="scenario-card" id="cardScenarioA">
+              <div class="scenario-header">
+                <div>
+                  <h3 style="font-size: 1.1rem; font-weight: 700;">Scenario A</h3>
+                  <span style="font-size: 0.8rem; color: var(--color-slate-light);">Conservative / Austerity</span>
+                </div>
+                <span class="scenario-badge badge-warning">₹80 Cr</span>
+              </div>
+              <div style="flex: 1; display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1rem;">
+                <div style="display: flex; justify-content: space-between; font-size: 0.85rem;">
+                  <span>Allocated Budget:</span>
+                  <strong id="scenA_Used">--</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.85rem;">
+                  <span>Achieved Impact:</span>
+                  <strong style="color: var(--color-primary);" id="scenA_Impact">--</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.85rem;">
+                  <span>Funded Projects:</span>
+                  <strong id="scenA_Count">--</strong>
+                </div>
+              </div>
+              <button class="btn btn-outline btn-sm" id="btnRunScenarioA">Run Scenario A</button>
+              <button type="button" class="btn btn-sm btn-ghost" id="btnApplyScenarioA" style="margin-top: 0.35rem; font-size: 0.75rem; color: var(--color-primary); border: 1px dashed var(--border-color); width: 100%;">Set as Official Budget (₹80 Cr)</button>
+            </div>
+
+            <!-- Scenario B -->
+            <div class="scenario-card active-scenario" id="cardScenarioB">
+              <div class="scenario-header">
+                <div>
+                  <h3 style="font-size: 1.1rem; font-weight: 700;">Scenario B</h3>
+                  <span style="font-size: 0.8rem; color: var(--color-slate-light);">Baseline Allocation</span>
+                </div>
+                <span class="scenario-badge badge-success">₹100 Cr</span>
+              </div>
+              <div style="flex: 1; display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1rem;">
+                <div style="display: flex; justify-content: space-between; font-size: 0.85rem;">
+                  <span>Allocated Budget:</span>
+                  <strong id="scenB_Used">--</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.85rem;">
+                  <span>Achieved Impact:</span>
+                  <strong style="color: var(--color-primary);" id="scenB_Impact">--</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.85rem;">
+                  <span>Funded Projects:</span>
+                  <strong id="scenB_Count">--</strong>
+                </div>
+              </div>
+              <button class="btn btn-primary btn-sm" id="btnRunScenarioB">Run Scenario B</button>
+              <button type="button" class="btn btn-sm btn-ghost" id="btnApplyScenarioB" style="margin-top: 0.35rem; font-size: 0.75rem; color: var(--color-primary); border: 1px dashed var(--border-color); width: 100%;">Set as Official Budget (₹100 Cr)</button>
+            </div>
+
+            <!-- Scenario C -->
+            <div class="scenario-card" id="cardScenarioC">
+              <div class="scenario-header">
+                <div>
+                  <h3 style="font-size: 1.1rem; font-weight: 700;">Scenario C</h3>
+                  <span style="font-size: 0.8rem; color: var(--color-slate-light);">Expanded / Stimulus</span>
+                </div>
+                <span class="scenario-badge badge-info">₹120 Cr</span>
+              </div>
+              <div style="flex: 1; display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1rem;">
+                <div style="display: flex; justify-content: space-between; font-size: 0.85rem;">
+                  <span>Allocated Budget:</span>
+                  <strong id="scenC_Used">--</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.85rem;">
+                  <span>Achieved Impact:</span>
+                  <strong style="color: var(--color-primary);" id="scenC_Impact">--</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.85rem;">
+                  <span>Funded Projects:</span>
+                  <strong id="scenC_Count">--</strong>
+                </div>
+              </div>
+              <button class="btn btn-outline btn-sm" id="btnRunScenarioC">Run Scenario C</button>
+              <button type="button" class="btn btn-sm btn-ghost" id="btnApplyScenarioC" style="margin-top: 0.35rem; font-size: 0.75rem; color: var(--color-primary); border: 1px dashed var(--border-color); width: 100%;">Set as Official Budget (₹120 Cr)</button>
+            </div>
+
+            <!-- Custom Scenario Runner -->
+            <div class="scenario-card">
+              <div class="scenario-header">
+                <div>
+                  <h3 style="font-size: 1.1rem; font-weight: 700;">Custom Scenario</h3>
+                  <span style="font-size: 0.8rem; color: var(--color-slate-light);">User-Defined Budget</span>
+                </div>
+                <span class="scenario-badge badge-neutral">Custom</span>
+              </div>
+              <div style="flex: 1; display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1rem;">
+                <label class="form-label" style="font-size: 0.78rem;">Budget (₹ Cr):</label>
+                <input type="number" id="inputCustomScenarioBudget" class="form-control" placeholder="e.g. 150" min="10" step="5" value="140">
+              </div>
+              <button class="btn btn-outline btn-sm" id="btnRunCustomScenario">Run Custom</button>
+              <button type="button" class="btn btn-sm btn-ghost" id="btnApplyCustomScenario" style="margin-top: 0.35rem; font-size: 0.75rem; color: var(--color-primary); border: 1px dashed var(--border-color); width: 100%;">Set as Official Budget</button>
+            </div>
+          </div>
+
+          <!-- Run All Scenarios Action Button -->
+          <div style="margin-bottom: 1.5rem; text-align: center;">
+            <button class="btn btn-primary" id="btnRunAllScenarios">
+              <span>🔄</span>
+              <span>Run &amp; Compare All Scenarios Simultaneously</span>
+            </button>
+          </div>
+
+          <!-- Scenario Comparison Table -->
+          <div class="card" style="margin-bottom: 2rem;">
+            <div class="card-header">
+              <h3><span>📋</span> Comparative Performance Matrix</h3>
+              <span class="card-subtitle">Side-by-Side Knapsack Optimums</span>
+            </div>
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Scenario</th>
+                    <th>Total Budget</th>
+                    <th>Used Budget</th>
+                    <th>Remaining</th>
+                    <th>Utilization</th>
+                    <th>Selected Count</th>
+                    <th>Achieved Impact</th>
+                    <th>Marginal Return</th>
+                  </tr>
+                </thead>
+                <tbody id="scenarioComparisonTableBody">
+                  <!-- Populated by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Scenario Chart -->
+          <div class="card" style="margin-bottom: 2rem;">
+            <div class="card-header">
+              <h3><span>📈</span> Budget vs. Achieved Impact Sensitivity Curve</h3>
+              <span class="card-subtitle">Diminishing Marginal Return Analysis</span>
+            </div>
+            <div class="chart-wrapper" style="height: 320px;">
+              <canvas id="scenarioComparisonChart"></canvas>
+            </div>
+          </div>
+
+          <!-- Section: Budget Trade-Off Analysis -->
+          <div class="card">
+            <div class="card-header">
+              <h3><span>⚖️</span> Budget Trade-Off Analysis</h3>
+              <span class="badge badge-info">Executive Briefing</span>
+            </div>
+            <p style="font-size: 0.88rem; color: var(--color-slate-light); margin-bottom: 1rem;">
+              Dynamic policy insights derived from algorithmic trade-offs across capital boundaries:
+            </p>
+            <div class="tradeoff-analysis-grid" id="tradeoffStatementsContainer">
+              <!-- Dynamic Trade-off Statements -->
+            </div>
+          </div>
+        </section>
+
+
+        <!-- ================= PAGE 8: ABOUT & HOW IT WORKS ================= -->
+        <section class="page-view" id="view-about">
+          <div class="section-header">
+            <h2>About &amp; How It Works</h2>
+            <p>Mathematical foundations, Object-Oriented design, and municipal governance benefits.</p>
+          </div>
+
+          <!-- The Municipal Problem & Algorithmic Solution -->
+          <div class="card" style="margin-bottom: 1.75rem;">
+            <div class="card-header">
+              <h3><span>🏛️</span> The Municipal Problem Statement</h3>
+              <span class="badge badge-primary">Smart City Decision Support</span>
+            </div>
+            <div style="font-size: 0.92rem; line-height: 1.6; color: var(--color-slate-medium);">
+              <p style="margin-bottom: 0.75rem;">
+                Municipal corporations operate under strictly bounded annual capital budgets. Every fiscal year, city councils face competing demands across vital public domains: <strong>Roads, Sanitation, Healthcare, Education, Water Supply, Environment,</strong> and <strong>Public Infrastructure</strong>.
+              </p>
+              <p>
+                Traditional municipal budgeting often relies on arbitrary political horse-trading, subjective historical increments, or unscientific heuristics. The <strong>City Budget Allocation Simulator</strong> transforms this process by formulating capital budgeting as a rigorous <strong>Constrained 0/1 Knapsack Optimization Problem</strong>, maximizing total societal welfare while strictly respecting statutory constraints.
+              </p>
+            </div>
+          </div>
+
+          <!-- The Algorithm: Dynamic Programming 0/1 Knapsack Variant -->
+          <div class="card" style="margin-bottom: 1.75rem;">
+            <div class="card-header">
+              <h3><span>🧮</span> The Algorithm: 0/1 Knapsack Variant using Dynamic Programming</h3>
+              <span class="badge badge-success">Exact Global Optimum</span>
+            </div>
+            <div style="font-size: 0.92rem; line-height: 1.6; color: var(--color-slate-medium);">
+              <p style="margin-bottom: 0.75rem;">
+                Each candidate project is modeled with:
+              </p>
+              <ul style="padding-left: 1.5rem; margin-bottom: 1rem;">
+                <li><strong>Weight \(w_i\):</strong> Project cost in Indian Crores (₹ Cr).</li>
+                <li><strong>Value \(v_i\):</strong> Social impact score (1 to 100) reflecting civic benefit.</li>
+                <li><strong>Capacity \(W\):</strong> Total municipal budget envelope in ₹ Crores.</li>
+              </ul>
+
+              <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--color-navy); margin-bottom: 0.5rem;">Core Recurrence Relation:</h4>
+              <div style="background-color: var(--color-bg-muted); padding: 1rem; border-radius: var(--radius-md); font-family: monospace; font-size: 0.9rem; margin-bottom: 1rem; border-left: 4px solid var(--color-primary);">
+                DP[i][b] = max( DP[i - 1][b],  DP[i - 1][b - cost[i]] + impact[i] )
+              </div>
+
+              <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--color-navy); margin-bottom: 0.5rem;">Simplified Principle:</h4>
+              <p style="margin-bottom: 0.75rem; background-color: var(--color-bg-surface); padding: 0.85rem; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+                "For every project, the simulator evaluates two choices:<br>
+                1. <strong>Include</strong> the project (consume cost, gain impact).<br>
+                2. <strong>Exclude</strong> the project (preserve remaining budget).<br>
+                Dynamic Programming stores previously calculated results in a state matrix to avoid redundant sub-computations and guarantee the mathematically optimal combination in \(O(N \cdot W)\) time."
+              </p>
+
+              <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--color-navy); margin-bottom: 0.5rem;">Handling Crores and Decimal Precision:</h4>
+              <p>
+                To prevent unnecessarily large arrays, the algorithm detects decimal precision and discretizes values using a dynamic scaling factor (\(\text{Scale} \in \{1, 10, 100\}\)). For a typical city budget of ₹100 Cr with 1 decimal place, capacity is scaled to 1000, calculating the optimal global solution in under <strong>2 milliseconds</strong>.
+              </p>
+            </div>
+          </div>
+
+          <!-- Object-Oriented Architecture -->
+          <div class="card" style="margin-bottom: 1.75rem;">
+            <div class="card-header">
+              <h3><span>🏗️</span> Object-Oriented Architecture (OOP Structure)</h3>
+              <span class="badge badge-info">Modular JavaScript Architecture</span>
+            </div>
+            <div style="font-size: 0.92rem; line-height: 1.6; color: var(--color-slate-medium);">
+              <p style="margin-bottom: 0.75rem;">
+                The application follows strict Object-Oriented design principles with modular classes:
+              </p>
+              <div class="tradeoff-analysis-grid">
+                <div class="tradeoff-item">
+                  <div class="tradeoff-icon">📦</div>
+                  <div class="tradeoff-body">
+                    <h4><code>class Project</code></h4>
+                    <p>Encapsulates ID, name, category, cost, impactScore, priority, mandatory flag, status, and <code>getEfficiency()</code> method.</p>
+                  </div>
+                </div>
+                <div class="tradeoff-item">
+                  <div class="tradeoff-icon">💰</div>
+                  <div class="tradeoff-body">
+                    <h4><code>class Budget</code></h4>
+                    <p>Manages totalBudget, usedBudget, remainingBudget, and tracks utilization percentages dynamically.</p>
+                  </div>
+                </div>
+                <div class="tradeoff-item">
+                  <div class="tradeoff-icon">⚖️</div>
+                  <div class="tradeoff-body">
+                    <h4><code>class Constraint</code></h4>
+                    <p>Enforces statutory budget ceilings, category floors/caps, and mandatory project mandates.</p>
+                  </div>
+                </div>
+                <div class="tradeoff-item">
+                  <div class="tradeoff-icon">📈</div>
+                  <div class="tradeoff-body">
+                    <h4><code>class BudgetAllocation</code></h4>
+                    <p>Contains selectedProjects, rejectedProjects, totalCost, totalImpact, categoryBreakdown, and DP table summaries.</p>
+                  </div>
+                </div>
+                <div class="tradeoff-item">
+                  <div class="tradeoff-icon">🎮</div>
+                  <div class="tradeoff-body">
+                    <h4><code>class BudgetSimulator</code></h4>
+                    <p>Main coordinator running DP optimizations, scenario comparisons, trade-off analysis, and LocalStorage persistence.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Key Governance Benefits -->
+          <div class="card">
+            <div class="card-header">
+              <h3><span>🌟</span> Key Benefits for Municipal Governance</h3>
+              <span class="badge badge-success">Public Welfare Impact</span>
+            </div>
+            <div class="tradeoff-analysis-grid">
+              <div class="tradeoff-item">
+                <div class="tradeoff-icon">🎯</div>
+                <div class="tradeoff-body">
+                  <h4>Maximum Public Value</h4>
+                  <p>Guarantees taxpayer funds generate the highest possible social impact score per invested Rupee.</p>
+                </div>
+              </div>
+              <div class="tradeoff-item">
+                <div class="tradeoff-icon">🔍</div>
+                <div class="tradeoff-body">
+                  <h4>Transparent Decision Making</h4>
+                  <p>Provides clear, objective mathematical rationale for why each project was funded or deferred.</p>
+                </div>
+              </div>
+              <div class="tradeoff-item">
+                <div class="tradeoff-icon">⚖️</div>
+                <div class="tradeoff-body">
+                  <h4>Equitable Category Distribution</h4>
+                  <p>Enforces statutory caps and minimums to prevent neglected neighborhoods or overfunded domains.</p>
+                </div>
+              </div>
+              <div class="tradeoff-item">
+                <div class="tradeoff-icon">📊</div>
+                <div class="tradeoff-body">
+                  <h4>Data-Informed Scenario Planning</h4>
+                  <p>Enables council members to instantly simulate the impact of ±20% fiscal expansions before committing funds.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- ================= MODALS & OVERLAYS ================= -->
+  <!-- 1. Optimization Processing Modal Animation -->
+  <div class="processing-overlay" id="processingOverlay">
+    <div class="processing-box">
+      <div class="spinner-civic"></div>
+      <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--color-navy); margin-bottom: 0.5rem;" id="processingTitle">
+        Running 0/1 Knapsack Optimization...
+      </h3>
+      <p style="font-size: 0.85rem; color: var(--color-slate-light); margin-bottom: 1rem;" id="processingStep">
+        Building dynamic programming state matrix across projects and capacity...
+      </p>
+      <div class="progress-track" style="height: 6px;">
+        <div class="progress-fill" id="processingBar" style="width: 25%; transition: width 0.3s ease;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Generic Confirmation Modal -->
+  <div class="modal-overlay" id="confirmModalOverlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="confirmModalTitle">Confirm Action</h3>
+        <button class="modal-close" id="btnConfirmModalClose">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p id="confirmModalMessage" style="font-size: 0.92rem; color: var(--color-slate-medium);"></p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" id="btnConfirmCancel">Cancel</button>
+        <button class="btn btn-danger" id="btnConfirmAccept">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Toast Notifications Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Application Scripts -->
+  <script src="js/auth.js"></script>
+  <script src="js/models.js"></script>
+  <script src="js/dynamicProgramming.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

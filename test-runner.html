@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>City Budget Allocation Simulator - Deep Functional Verification Suite</title>
+  <script src="js/models.js"></script>
+  <script src="js/dynamicProgramming.js"></script>
+</head>
+<body>
+  <h1>Test Suite Results</h1>
+  <pre id="output"></pre>
+
+  <script>
+    const output = document.getElementById('output');
+    const logs = [];
+    function log(msg) {
+      logs.push(msg);
+      output.textContent = logs.join('\n');
+    }
+
+    function assert(cond, desc) {
+      if (cond) {
+        log('  [PASS] ' + desc);
+      } else {
+        log('  [FAIL] ' + desc);
+        throw new Error('Assertion failed: ' + desc);
+      }
+    }
+
+    try {
+      log('=== STARTING DEEP FUNCTIONAL VERIFICATION ===\n');
+
+      const sim = new Models.BudgetSimulator(100);
+
+      // -------------------------------------------------------------
+      // TEST 1: Budget = 100 Cr, Standard Demo Projects
+      // -------------------------------------------------------------
+      log('TEST 1: Budget = ₹100 Cr (Standard Demo Projects)');
+      sim.loadDemoData();
+      let res1 = sim.optimize();
+
+      assert(sim.projects.length === 8, 'Total registered projects = 8');
+      assert(sim.budget.totalBudget === 100, 'Total budget = ₹100 Cr');
+      assert(res1.totalBudget === 100, 'Allocation total budget = ₹100 Cr');
+
+      // Verify math
+      const sumSelectedCost1 = res1.selectedProjects.reduce((s, p) => s + p.cost, 0);
+      const sumSelectedImpact1 = res1.selectedProjects.reduce((s, p) => s + p.impactScore, 0);
+
+      assert(Math.abs(res1.totalCost - sumSelectedCost1) < 0.001, 'Total cost equals sum of selected project costs: ' + res1.totalCost + ' Cr');
+      assert(res1.totalImpact === sumSelectedImpact1, 'Total impact equals sum of selected project impacts: ' + res1.totalImpact);
+      assert(Math.abs(res1.remainingBudget - (100 - res1.totalCost)) < 0.001, 'Remaining budget = Total (100) - Used (' + res1.totalCost + ') = ' + res1.remainingBudget + ' Cr');
+      assert(res1.selectedProjects.length + res1.rejectedProjects.length === 8, 'Selected (' + res1.selectedProjects.length + ') + Rejected (' + res1.rejectedProjects.length + ') = 8');
+      assert(res1.selectedProjects.some(p => p.name === 'Hospital Upgrade'), 'Mandatory project Hospital Upgrade is selected');
+      log('  -> Results: Used: ₹' + res1.totalCost + ' Cr, Remaining: ₹' + res1.remainingBudget + ' Cr, Impact: ' + res1.totalImpact + ', Selected: ' + res1.selectedProjects.length + '\n');
+
+      // -------------------------------------------------------------
+      // TEST 2: Budget = 50 Cr
+      // -------------------------------------------------------------
+      log('TEST 2: Budget = ₹50 Cr');
+      sim.setBudget(50);
+      let res2 = sim.optimize();
+
+      assert(sim.budget.totalBudget === 50, 'Total budget = ₹50 Cr');
+      assert(res2.totalCost <= 50, 'Total cost does not exceed ₹50 Cr (Used: ₹' + res2.totalCost + ' Cr)');
+      assert(Math.abs(res2.remainingBudget - (50 - res2.totalCost)) < 0.001, 'Remaining budget calculated correctly: ₹' + res2.remainingBudget + ' Cr');
+      assert(res2.selectedProjects.some(p => p.name === 'Hospital Upgrade'), 'Mandatory Hospital Upgrade (₹30 Cr) is included');
+      assert(res2.totalImpact < res1.totalImpact, 'Impact with ₹50 Cr (' + res2.totalImpact + ') is strictly less than with ₹100 Cr (' + res1.totalImpact + ')');
+      log('  -> Results: Used: ₹' + res2.totalCost + ' Cr, Remaining: ₹' + res2.remainingBudget + ' Cr, Impact: ' + res2.totalImpact + ', Selected: ' + res2.selectedProjects.length + '\n');
+
+      // -------------------------------------------------------------
+      // TEST 3: Budget = 150 Cr
+      // -------------------------------------------------------------
+      log('TEST 3: Budget = ₹150 Cr');
+      sim.setBudget(150);
+      let res3 = sim.optimize();
+
+      assert(sim.budget.totalBudget === 150, 'Total budget = ₹150 Cr');
+      assert(res3.totalCost <= 150, 'Total cost does not exceed ₹150 Cr (Used: ₹' + res3.totalCost + ' Cr)');
+      assert(res3.selectedProjects.length === 8, 'All 8 projects fit within ₹150 Cr (total needed = ₹140 Cr)');
+      assert(res3.remainingBudget === 10, 'Remaining budget = 150 - 140 = ₹10 Cr');
+      assert(res3.totalImpact === 615, 'Total impact = 615 (all candidate projects funded)');
+      log('  -> Results: Used: ₹' + res3.totalCost + ' Cr, Remaining: ₹' + res3.remainingBudget + ' Cr, Impact: ' + res3.totalImpact + ', Selected: ' + res3.selectedProjects.length + '\n');
+
+      // -------------------------------------------------------------
+      // TEST 4: Add New Project (High Impact)
+      // -------------------------------------------------------------
+      log('TEST 4: Add New High-Impact Project ("Solar Grid", ₹10 Cr, Impact 98)');
+      sim.setBudget(100);
+      sim.addProject({
+        name: 'Solar Grid',
+        category: 'Environment',
+        cost: 10,
+        impactScore: 98,
+        priority: 'High'
+      });
+      assert(sim.projects.length === 9, 'Project count increased to 9');
+      let res4 = sim.optimize();
+
+      assert(res4.selectedProjects.some(p => p.name === 'Solar Grid'), 'Optimizer selected the newly added Solar Grid project');
+      assert(res4.totalImpact > res1.totalImpact, 'Total impact increased from ' + res1.totalImpact + ' to ' + res4.totalImpact);
+      log('  -> Results: Used: ₹' + res4.totalCost + ' Cr, Remaining: ₹' + res4.remainingBudget + ' Cr, Impact: ' + res4.totalImpact + ', Selected: ' + res4.selectedProjects.length + '\n');
+
+      // -------------------------------------------------------------
+      // TEST 5: Modify Existing Project Impact & Cost
+      // -------------------------------------------------------------
+      log('TEST 5: Modify Road Repair (Change cost 20 -> 10 Cr, impact 80 -> 100)');
+      const roadProj = sim.projects.find(p => p.name === 'Road Repair');
+      assert(roadProj !== null, 'Found Road Repair project');
+      sim.updateProject(roadProj.id, {
+        cost: 10,
+        impactScore: 100
+      });
+      let res5 = sim.optimize();
+      assert(res5.selectedProjects.some(p => p.name === 'Road Repair'), 'Road Repair is now selected after increasing its efficiency');
+      log('  -> Results: Used: ₹' + res5.totalCost + ' Cr, Remaining: ₹' + res5.remainingBudget + ' Cr, Impact: ' + res5.totalImpact + '\n');
+
+      // -------------------------------------------------------------
+      // TEST 6: Delete a Project
+      // -------------------------------------------------------------
+      log('TEST 6: Delete "Solar Grid" Project');
+      const solarProj = sim.projects.find(p => p.name === 'Solar Grid');
+      sim.deleteProject(solarProj.id);
+      assert(sim.projects.length === 8, 'Project count decreased back to 8');
+      let res6 = sim.optimize();
+      assert(!res6.selectedProjects.some(p => p.name === 'Solar Grid'), 'Solar Grid is no longer in selected projects');
+      log('  -> Results: Project removed cleanly, re-optimized successfully\n');
+
+      // -------------------------------------------------------------
+      // TEST 7: Constraints Enforcement
+      // -------------------------------------------------------------
+      log('TEST 7: Constraints Enforcement (Category Caps & Infeasible Budget Checks)');
+      sim.loadDemoData(); // Reset to standard demo
+      sim.setBudget(100);
+
+      // Set Max Education = 10 Cr (School Development is 15 Cr, so it must be rejected)
+      sim.constraints.setCategoryMax('Education', 10);
+      let res7 = sim.optimize();
+      assert(!res7.selectedProjects.some(p => p.name === 'School Development'), 'School Development (₹15 Cr) rejected because Max Education is capped at ₹10 Cr');
+
+      // Test Infeasible Mandatory Project
+      let threwInfeasible = false;
+      try {
+        sim.setBudget(25); // Mandatory Hospital is 30 Cr > 25 Cr
+        sim.optimize();
+      } catch (err) {
+        threwInfeasible = true;
+        assert(err.message.includes('Mandatory projects'), 'Correctly caught infeasible mandatory constraint: ' + err.message);
+      }
+      assert(threwInfeasible, 'Infeasible mandatory project threw expected exception');
+      log('  -> Constraints successfully enforced!\n');
+
+      // -------------------------------------------------------------
+      // TEST 8: Decimal Budget & Costs
+      // -------------------------------------------------------------
+      log('TEST 8: Decimal Budget & Project Costs (₹85.5 Cr Budget, ₹12.5 Cr Project)');
+      sim.loadDemoData();
+      sim.setBudget(85.5);
+      sim.addProject({
+        name: 'Smart Clinic',
+        category: 'Healthcare',
+        cost: 12.5,
+        impactScore: 82,
+        priority: 'High'
+      });
+      let res8 = sim.optimize();
+      assert(res8.totalCost <= 85.5, 'Total cost (' + res8.totalCost + ') <= 85.5 Cr');
+      assert(Math.abs(res8.remainingBudget - parseFloat((85.5 - res8.totalCost).toFixed(2))) < 0.001, 'Decimal remaining budget calculated exactly');
+      log('  -> Results: Used: ₹' + res8.totalCost + ' Cr, Remaining: ₹' + res8.remainingBudget + ' Cr, Impact: ' + res8.totalImpact + '\n');
+
+      // -------------------------------------------------------------
+      // TEST 9: Validation Checks
+      // -------------------------------------------------------------
+      log('TEST 9: Validation Checks (Negative budget, 0 cost, impact > 100, duplicates)');
+      let valErrors = 0;
+
+      try { sim.setBudget(-50); } catch (e) { valErrors++; }
+      try { sim.addProject({ name: '', category: 'Roads', cost: 10, impactScore: 50, priority: 'Medium' }); } catch (e) { valErrors++; }
+      try { sim.addProject({ name: 'Valid Name', category: 'Roads', cost: -5, impactScore: 50, priority: 'Medium' }); } catch (e) { valErrors++; }
+      try { sim.addProject({ name: 'Valid Name 2', category: 'Roads', cost: 10, impactScore: 150, priority: 'Medium' }); } catch (e) { valErrors++; }
+      try { sim.addProject({ name: 'Road Repair', category: 'Roads', cost: 10, impactScore: 50, priority: 'Medium' }); } catch (e) { valErrors++; } // Duplicate
+
+      assert(valErrors === 5, 'All 5 invalid inputs were strictly rejected (Negative budget, empty name, negative cost, impact > 100, duplicate name)');
+      log('  -> Validation passed completely!\n');
+
+      // -------------------------------------------------------------
+      // TEST 10: Scenario Comparison Fresh Runs
+      // -------------------------------------------------------------
+      log('TEST 10: Scenario Comparison Fresh Optimization Runs');
+      sim.loadDemoData();
+      const scenA = sim.runScenario(80, 'Scenario A');
+      const scenB = sim.runScenario(100, 'Scenario B');
+      const scenC = sim.runScenario(120, 'Scenario C');
+
+      assert(scenA.totalBudget === 80 && scenB.totalBudget === 100 && scenC.totalBudget === 120, 'Scenarios maintain distinct total budgets');
+      assert(scenA.totalImpact <= scenB.totalImpact && scenB.totalImpact <= scenC.totalImpact, 'Impact scales monotonically: ' + scenA.totalImpact + ' <= ' + scenB.totalImpact + ' <= ' + scenC.totalImpact);
+      log('  -> Scenarios verified: A (80 Cr -> ' + scenA.totalImpact + ' pts), B (100 Cr -> ' + scenB.totalImpact + ' pts), C (120 Cr -> ' + scenC.totalImpact + ' pts)\n');
+
+      log('=== ALL 10 DEEP FUNCTIONAL VERIFICATION TESTS PASSED SUCCESSFULLY! ===');
+    } catch (err) {
+      log('\n[CRITICAL ERROR] ' + err.message);
+    }
+  </script>
+</body>
+</html>
