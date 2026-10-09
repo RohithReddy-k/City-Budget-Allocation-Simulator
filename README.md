@@ -114,3 +114,4 @@ Then navigate to `http://localhost:8000` or `http://localhost:3000` in your brow
    - Review the 4 Chart.js analytics graphs.
 7. **Scenario Comparison**: Click "Run & Compare All Scenarios Simultaneously" to review sensitivity and trade-off insights.
 8. **Export**: Test the "Print Report" or "Export CSV" buttons.
+# City-Budget-Allocation-Simulator
